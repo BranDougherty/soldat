@@ -223,7 +223,7 @@ end;
 {$IFDEF DEVELOPMENT}
 {$PUSH}
 {$WARN 5027 OFF}
-procedure CommandNetconfig(Args: array of AnsiString; Sender: Byte);
+procedure CommandNetConfig(Args: array of AnsiString; Sender: Byte);
 var
   Name: array [0..256] of PAnsiChar;
   OutDataType: ESteamNetworkingConfigDataType;
@@ -233,32 +233,37 @@ var
   IntegerValue: Integer = 0;
   cbResult: csize_t = 0;
   SetResult: Boolean = False;
+  NetworkingUtil: TSteamNetworkingUtils;
 begin
   cbResult := 0;
 
-  if Length(Args) <= 3 then
+  if Length(Args) < 3 then
   begin
     MainConsole.Console('Usage: netconfig "id" "value"', GAME_MESSAGE_COLOR);
     Exit;
   end;
 
-  if UDP.NetworkingUtil.GetConfigValueInfo(ESteamNetworkingConfigValue(StrToInt(Args[1])), @Name, @OutDataType, @OutScope, @OutNextValue) then
+  NetworkingUtil := TSteamNetworkingUtils.Init();
+
+  if NetworkingUtil.GetConfigValueInfo(ESteamNetworkingConfigValue(StrToInt(Args[1])), @Name, @OutDataType, @OutScope, @OutNextValue) then
   begin
     if OutDataType = k_ESteamNetworkingConfig_Int32 then
     begin
       cbResult := SizeOf(Integer);
       IntegerValue := StrToIntDef(Args[2], 0);
-      SetResult := UDP.NetworkingUtil.SetConfigValue(ESteamNetworkingConfigValue(StrToInt(Args[1])), k_ESteamNetworkingConfig_Global, 0, OutDataType, @IntegerValue);
+      SetResult := NetworkingUtil.SetConfigValue(ESteamNetworkingConfigValue(StrToInt(Args[1])), k_ESteamNetworkingConfig_Global, 0, OutDataType, @IntegerValue);
       MainConsole.Console(Format('[NET] NetConfig: Set %S to %D, result: %S', [AnsiString(Name[0]), IntegerValue, SetResult.ToString(TUseBoolStrs.True)]), DEBUG_MESSAGE_COLOR{$IFDEF SERVER}, Sender{$ENDIF});
     end
     else if OutDataType = k_ESteamNetworkingConfig_Float then
     begin
       cbResult := SizeOf(Single);
       FloatValue := StrToFloatDef(Args[2], 0.0);
-      SetResult := UDP.NetworkingUtil.SetConfigValue(ESteamNetworkingConfigValue(StrToInt(Args[1])), k_ESteamNetworkingConfig_Global, 0, OutDataType, @FloatValue);
+      SetResult := NetworkingUtil.SetConfigValue(ESteamNetworkingConfigValue(StrToInt(Args[1])), k_ESteamNetworkingConfig_Global, 0, OutDataType, @FloatValue);
       MainConsole.Console(Format('[NET] NetConfig: Set %S to %F, result: %S', [AnsiString(Name[0]), FloatValue, SetResult.ToString(TUseBoolStrs.True)]), DEBUG_MESSAGE_COLOR{$IFDEF SERVER}, Sender{$ENDIF});
     end;
   end;
+
+  NetworkingUtil.Free;
 end;
 
 procedure CommandNetConfgList(Args: array of AnsiString; Sender: Byte);
